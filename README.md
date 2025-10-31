@@ -78,159 +78,214 @@ The full form of an ARM is an advanced reduced instruction set computer (RISC) m
 
 ## STM 32 CUBE PROGRAM :
 ```
-ENTRY(Reset_Handler)
+#include "main.h"
+#include"stdbool.h"
+bool IRSENSOR;
+void IRPAIR();
+static void MX_GPIO_Init(void);
+/* Private includes ----------------------------------------------------------*/
+/* USER CODE BEGIN Includes */
 
-/* Highest address of the user mode stack */
-_estack = ORIGIN(RAM) + LENGTH(RAM); /* end of "RAM" Ram type memory */
+/* USER CODE END Includes */
 
-_Min_Heap_Size = 0x200; /* required amount of heap  */
-_Min_Stack_Size = 0x400; /* required amount of stack */
+/* Private typedef -----------------------------------------------------------*/
+/* USER CODE BEGIN PTD */
 
-/* Memories definition */
-MEMORY
+/* USER CODE END PTD */
+
+/* Private define ------------------------------------------------------------*/
+/* USER CODE BEGIN PD */
+/* USER CODE END PD */
+
+/* Private macro -------------------------------------------------------------*/
+/* USER CODE BEGIN PM */
+
+/* USER CODE END PM */
+
+/* Private variables ---------------------------------------------------------*/
+
+/* USER CODE BEGIN PV */
+
+/* USER CODE END PV */
+
+/* Private function prototypes -----------------------------------------------*/
+void SystemClock_Config(void);
+static void MX_GPIO_Init(void);
+/* USER CODE BEGIN PFP */
+
+/* USER CODE END PFP */
+
+/* Private user code ---------------------------------------------------------*/
+/* USER CODE BEGIN 0 */
+
+/* USER CODE END 0 */
+
+/**
+ * @brief  The application entry point.
+ * @retval int
+ */
+int main(void)
 {
-  RAM    (xrw)   : ORIGIN = 0x20000000, LENGTH = 64K
-  RAM2   (xrw)   : ORIGIN = 0x10000000, LENGTH = 32K
-  FLASH   (rx)   : ORIGIN = 0x08000000, LENGTH = 256K
+ /* USER CODE BEGIN 1 */
+
+ /* USER CODE END 1 */
+
+ /* MCU Configuration--------------------------------------------------------*/
+
+ /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+ HAL_Init();
+
+ /* USER CODE BEGIN Init */
+
+ /* USER CODE END Init */
+
+ /* Configure the system clock */
+ SystemClock_Config();
+
+ /* USER CODE BEGIN SysInit */
+
+ /* USER CODE END SysInit */
+
+ /* Initialize all configured peripherals */
+ MX_GPIO_Init();
+ /* USER CODE BEGIN 2 */
+
+ /* USER CODE END 2 */
+
+ /* Infinite loop */
+ /* USER CODE BEGIN WHILE */
+ while (1)
+ {
+   /* USER CODE END WHILE */
+     IRPAIR();
+   /* USER CODE BEGIN 3 */
+ }
+ /* USER CODE END 3 */
+}
+void IRPAIR()
+{
+IRSENSOR = HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_4);
+if(IRSENSOR==0)
+{
+HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
+HAL_Delay(1000);
+HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
+HAL_Delay(1000);
+}
+else
+{
+HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
+HAL_Delay(1000);
+}
 }
 
-/* Sections */
-SECTIONS
+/**
+ * @brief System Clock Configuration
+ * @retval None
+ */
+void SystemClock_Config(void)
 {
-  /* The startup code into "FLASH" Rom type memory */
-  .isr_vector :
-  {
-    . = ALIGN(4);
-    KEEP(*(.isr_vector)) /* Startup code */
-    . = ALIGN(4);
-  } >FLASH
+ RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+ RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-  /* The program code and other data into "FLASH" Rom type memory */
-  .text :
-  {
-    . = ALIGN(4);
-    *(.text)           /* .text sections (code) */
-    *(.text*)          /* .text* sections (code) */
-    *(.glue_7)         /* glue arm to thumb code */
-    *(.glue_7t)        /* glue thumb to arm code */
-    *(.eh_frame)
+ /** Configure the main internal regulator output voltage
+ */
+ __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE2);
+ /** Initializes the CPU, AHB and APB busses clocks
+ */
+ RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_MSI;
+ RCC_OscInitStruct.MSIState = RCC_MSI_ON;
+ RCC_OscInitStruct.MSICalibrationValue = RCC_MSICALIBRATION_DEFAULT;
+ RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_6;
+ RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+ if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+ {
+   Error_Handler();
+ }
+ /** Configure the SYSCLKSource, HCLK, PCLK1 and PCLK2 clocks dividers
+ */
+ RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK3|RCC_CLOCKTYPE_HCLK
+                             |RCC_CLOCKTYPE_SYSCLK|RCC_CLOCKTYPE_PCLK1
+                             |RCC_CLOCKTYPE_PCLK2;
+ RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_MSI;
+ RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+ RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+ RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+ RCC_ClkInitStruct.AHBCLK3Divider = RCC_SYSCLK_DIV1;
 
-    KEEP (*(.init))
-    KEEP (*(.fini))
-
-    . = ALIGN(4);
-    _etext = .;        /* define a global symbols at end of code */
-  } >FLASH
-
-  /* Constant data into "FLASH" Rom type memory */
-  .rodata :
-  {
-    . = ALIGN(4);
-    *(.rodata)         /* .rodata sections (constants, strings, etc.) */
-    *(.rodata*)        /* .rodata* sections (constants, strings, etc.) */
-    . = ALIGN(4);
-  } >FLASH
-
-  .ARM.extab (READONLY) : /* The READONLY keyword is only supported in GCC11 and later, remove it if using GCC10 or earlier. */
-  {
-    . = ALIGN(4);
-    *(.ARM.extab* .gnu.linkonce.armextab.*)
-    . = ALIGN(4);
-  } >FLASH
-  .ARM (READONLY) : /* The READONLY keyword is only supported in GCC11 and later, remove it if using GCC10 or earlier. */
-  {
-    . = ALIGN(4);
-    __exidx_start = .;
-    *(.ARM.exidx*)
-    __exidx_end = .;
-    . = ALIGN(4);
-  } >FLASH
-
-  .preinit_array (READONLY) : /* The READONLY keyword is only supported in GCC11 and later, remove it if using GCC10 or earlier. */
-  {
-    . = ALIGN(4);
-    PROVIDE_HIDDEN (__preinit_array_start = .);
-    KEEP (*(.preinit_array*))
-    PROVIDE_HIDDEN (__preinit_array_end = .);
-    . = ALIGN(4);
-  } >FLASH
-
-  .init_array (READONLY) : /* The READONLY keyword is only supported in GCC11 and later, remove it if using GCC10 or earlier. */
-  {
-    . = ALIGN(4);
-    PROVIDE_HIDDEN (__init_array_start = .);
-    KEEP (*(SORT(.init_array.*)))
-    KEEP (*(.init_array*))
-    PROVIDE_HIDDEN (__init_array_end = .);
-    . = ALIGN(4);
-  } >FLASH
-
-  .fini_array (READONLY) : /* The READONLY keyword is only supported in GCC11 and later, remove it if using GCC10 or earlier. */
-  {
-    . = ALIGN(4);
-    PROVIDE_HIDDEN (__fini_array_start = .);
-    KEEP (*(SORT(.fini_array.*)))
-    KEEP (*(.fini_array*))
-    PROVIDE_HIDDEN (__fini_array_end = .);
-    . = ALIGN(4);
-  } >FLASH
-
-  /* Used by the startup to initialize data */
-  _sidata = LOADADDR(.data);
-
-  /* Initialized data sections into "RAM" Ram type memory */
-  .data :
-  {
-    . = ALIGN(4);
-    _sdata = .;        /* create a global symbol at data start */
-    *(.data)           /* .data sections */
-    *(.data*)          /* .data* sections */
-    *(.RamFunc)        /* .RamFunc sections */
-    *(.RamFunc*)       /* .RamFunc* sections */
-
-    . = ALIGN(4);
-    _edata = .;        /* define a global symbol at data end */
-
-  } >RAM AT> FLASH
-
-  /* Uninitialized data section into "RAM" Ram type memory */
-  . = ALIGN(4);
-  .bss :
-  {
-    /* This is used by the startup in order to initialize the .bss section */
-    _sbss = .;         /* define a global symbol at bss start */
-    __bss_start__ = _sbss;
-    *(.bss)
-    *(.bss*)
-    *(COMMON)
-
-    . = ALIGN(4);
-    _ebss = .;         /* define a global symbol at bss end */
-    __bss_end__ = _ebss;
-  } >RAM
-
-  /* User_heap_stack section, used to check that there is enough "RAM" Ram  type memory left */
-  ._user_heap_stack :
-  {
-    . = ALIGN(8);
-    PROVIDE ( end = . );
-    PROVIDE ( _end = . );
-    . = . + _Min_Heap_Size;
-    . = . + _Min_Stack_Size;
-    . = ALIGN(8);
-  } >RAM
-
-  /* Remove information from the compiler libraries */
-  /DISCARD/ :
-  {
-    libc.a ( * )
-    libm.a ( * )
-    libgcc.a ( * )
-  }
-
-  .ARM.attributes 0 : { *(.ARM.attributes) }
+ if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+ {
+   Error_Handler();
+ }
 }
 
+/**
+ * @brief GPIO Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_GPIO_Init(void)
+{
+ GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+ /* GPIO Ports Clock Enable */
+ __HAL_RCC_GPIOB_CLK_ENABLE();
+
+ /*Configure GPIO pin Output Level */
+ HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
+
+ /*Configure GPIO pin : PB4 */
+ GPIO_InitStruct.Pin = GPIO_PIN_4;
+ GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+ GPIO_InitStruct.Pull = GPIO_PULLUP;
+ HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+ /*Configure GPIO pin : PB5 */
+ GPIO_InitStruct.Pin = GPIO_PIN_5;
+ GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+ GPIO_InitStruct.Pull = GPIO_NOPULL;
+ GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+ HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+}
+
+/* USER CODE BEGIN 4 */
+
+/* USER CODE END 4 */
+
+/**
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
+void Error_Handler(void)
+{
+ /* USER CODE BEGIN Error_Handler_Debug */
+ /* User can add his own implementation to report the HAL error return state */
+ __disable_irq();
+ while (1)
+ {
+ }
+ /* USER CODE END Error_Handler_Debug */
+}
+
+#ifdef  USE_FULL_ASSERT
+/**
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
+void assert_failed(uint8_t *file, uint32_t line)
+{
+ /* USER CODE BEGIN 6 */
+ /* User can add his own implementation to report the file name and line number,
+    ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+ /* USER CODE END 6 */
+}
+#endif /* USE_FULL_ASSERT */
+
+/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
 ```
 
 
